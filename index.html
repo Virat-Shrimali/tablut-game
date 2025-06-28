@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablut Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-gap: 2px;
+            background-color: #333;
+            padding: 5px;
+        }
+        .square {
+            width: 50px;
+            height: 50px;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .throne {
+            background-color: #ffd700;
+        }
+        .corner {
+            background-color: #888;
+        }
+        .piece {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .black {
+            background-color: #000;
+        }
+        .white {
+            background-color: #fff;
+            border: 2px solid #000;
+        }
+        .king {
+            background-color: #ff4500;
+            border: 2px solid #000;
+        }
+        .selected {
+            border: 3px solid #00f;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #game-mode, #player-selection {
+            margin-top: 10px;
+        }
+        #player-selection {
+            display: none;
+        }
+        #reset {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tablut</h1>
+    <div id="game-mode">
+        <label><input type="radio" name="mode" value="two-player" checked> Two Player</label>
+        <label><input type="radio" name="mode" value="vs-computer"> Vs Computer</label>
+    </div>
+    <div id="player-selection">
+        <label>Play as: 
+            <select id="player-color">
+                <option value="white">White (Defenders)</option>
+                <option value="black">Black (Attackers)</option>
+            </select>
+        </label>
+    </div>
+    <div id="game-board"></div>
+    <div id="status">White's turn (Defenders)</div>
+    <button id="reset">Reset Game</button>
+
+    <script>
+        const boardSize = 9;
+        const board = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
+        let currentPlayer = 'white';
+        let selectedPiece = null;
+        let gameOver = false;
+        let gameMode = 'two-player';
+        let playerColor = 'white';
+        let kingOnThrone = true;
+
+        // Initialize board
+        function setupBoard() {
+            // Clear board
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    board[i][j] = null;
+                }
+            }
+
+            // Place black pieces (attackers)
+            const blackPositions = [
+                [0, 3], [0, 4], [0, 5], [1, 4],
+                [3, 0], [4, 0], [5, 0], [4, 1],
+                [8, 3], [8, 4], [8, 5], [7, 4],
+                [3, 8], [4, 8], [5, 8], [4, 7]
+            ];
+            blackPositions.forEach(([row, col]) => {
+                board[row][col] = 'black';
+            });
+
+            // Place white pieces (defenders) in cross pattern around king
+            const whitePositions = [
+                [2, 4], [3, 4], [4, 2], [4, 3],
+                [4, 5], [4, 6], [5, 4], [6, 4]
+            ];
+            whitePositions.forEach(([row, col]) => {
+                board[row][col] = 'white';
+            });
+
+            // Place king
+            board[4][4] = 'king';
+            kingOnThrone = true;
+        }
+
+        // Render board
+        function renderBoard() {
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = '';
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    if (row === 4 && col === 4) {
+                        square.classList.add('throne');
+                    }
+                    if ((row === 0 && col === 0) || (row === 0 && col === 8) ||
+                        (row === 8 && col === 0) || (row === 8 && col === 8)) {
+                        square.classList.add('corner');
+                    }
+                    if (board[row][col]) {
+                        const piece = document.createElement('div');
+                        piece.classList.add('piece', board[row][col]);
+                        if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
+                            piece.classList.add('selected');
+                        }
+                        square.appendChild(piece);
+                    }
+                    square.addEventListener('click', () => handleSquareClick(row, col));
+                    gameBoard.appendChild(square);
+                }
+            }
+        }
+
+        // Handle square clicks
+        function handleSquareClick(row, col) {
+            if (gameOver) return;
+            if (gameMode === 'vs-computer' && currentPlayer !== playerColor) return;
+
+            if (!selectedPiece && board[row][col]) {
+                if ((board[row][col] === 'black' && currentPlayer === 'black') ||
+                    (board[row][col] === 'white' || board[row][col] === 'king') && currentPlayer === 'white') {
+                    selectedPiece = { row, col };
+                    renderBoard();
+                }
+            } else if (selectedPiece) {
+                if (isValidMove(selectedPiece.row, selectedPiece.col, row, col)) {
+                    movePiece(selectedPiece.row, selectedPiece.col, row, col);
+                    if (selectedPiece.row === 4 && selectedPiece.col === 4 && board[row][col] === 'king') {
+                        kingOnThrone = false;
+                    }
+                    selectedPiece = null;
+                    checkCaptures(row, col);
+                    checkWinConditions();
+                    currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                    updateStatus();
+                    renderBoard();
+                    if (gameMode === 'vs-computer' && currentPlayer !== playerColor && !gameOver) {
+                        setTimeout(computerMove, 500);
+                    }
+                } else if (board[row][col] && 
+                    ((board[row][col] === 'black' && currentPlayer === 'black') ||
+                     (board[row][col] === 'white' || board[row][col] === 'king') && currentPlayer === 'white')) {
+                    selectedPiece = { row, col };
+                    renderBoard();
+                } else {
+                    selectedPiece = null;
+                    renderBoard();
+                }
+            }
+        }
+
+        // Validate move
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            if (toRow === 4 && toCol === 4 && !kingOnThrone) return false;
+            if (fromRow !== toRow && fromCol !== toCol) return false;
+            if (board[toRow][toCol]) return false;
+
+            if (fromRow === toRow) {
+                const start = Math.min(fromCol, toCol);
+                const end = Math.max(fromCol, toCol);
+                for (let col = start + 1; col < end; col++) {
+                    if (board[fromRow][col]) return false;
+                }
+            } else if (fromCol === toCol) {
+                const start = Math.min(fromRow, toRow);
+                const end = Math.max(fromRow, toRow);
+                for (let row = start + 1; row < end; row++) {
+                    if (board[row][fromCol]) return false;
+                }
+            }
+            return true;
+        }
+
+        // Move piece
+        function movePiece(fromRow, fromCol, toRow, toCol) {
+            board[toRow][toCol] = board[fromRow][fromCol];
+            board[fromRow][fromCol] = null;
+        }
+
+        // Check for captures
+        function checkCaptures(row, col) {
+            const piece = board[row][col];
+            const opponent = piece === 'black' ? ['white', 'king'] : ['black'];
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+            directions.forEach(([dr, dc]) => {
+                const r = row + dr;
+                const c = col + dc;
+                if (r >= 0 && r < boardSize && c >= 0 && c < boardSize && opponent.includes(board[r][c])) {
+                    const r2 = r + dr;
+                    const c2 = c + dc;
+                    const isHostile = (r2, c2) => {
+                        if (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) return false;
+                        return (board[r2][c2] === piece) ||
+                               (r2 === 4 && c2 === 4) ||
+                               ((r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
+                                (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
+                    };
+                    if (isHostile(r2, c2)) {
+                        if (board[r][c] !== 'king' || isKingCaptured(r, c)) {
+                            board[r][c] = null;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Check if king is captured
+        function isKingCaptured(row, col) {
+            if (board[row][col] !== 'king') return false;
+            if (row === 4 && col === 4) {
+                return [[0, 1], [0, -1], [1, 0], [-1, 0]].every(([dr, dc]) => {
+                    const r = row + dr;
+                    const c = col + dc;
+                    return r >= 0 && r < boardSize && c >= 0 && c < boardSize && board[r][c] === 'black';
+                });
+            }
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            return directions.some(([dr, dc]) => {
+                const r1 = row + dr;
+                const c1 = col + dc;
+                const r2 = row - dr;
+                const c2 = col - dc;
+                const isHostile1 = (r1 < 0 || r1 >= boardSize || c1 < 0 || c1 >= boardSize) ? false :
+                    (board[r1][c1] === 'black' || (r1 === 4 && c1 === 4) ||
+                     (r1 === 0 && c1 === 0) || (r1 === 0 && c1 === 8) ||
+                     (r1 === 8 && c1 === 0) || (r1 === 8 && c1 === 8));
+                const isHostile2 = (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) ? false :
+                    (board[r2][c2] === 'black' || (r2 === 4 && c2 === 4) ||
+                     (r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
+                     (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
+                return isHostile1 && isHostile2;
+            });
+        }
+
+        // Check win conditions
+        function checkWinConditions() {
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    if (board[row][col] === 'king' && (row === 0 || row === 8 || col === 0 || col === 8)) {
+                        gameOver = true;
+                        document.getElementById('status').textContent = 'White wins! King escaped!';
+                        return;
+                    }
+                    if (isKingCaptured(row, col)) {
+                        gameOver = true;
+                        document.getElementById('status').textContent = 'Black wins! King captured!';
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Get all possible moves for a player
+        function getPossibleMoves(player) {
+            const moves = [];
+            const pieces = player === 'black' ? ['black'] : ['white', 'king'];
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    if (pieces.includes(board[row][col])) {
+                        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                        directions.forEach(([dr, dc]) => {
+                            let r = row + dr;
+                            let c = col + dc;
+                            while (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                                if (isValidMove(row, col, r, c)) {
+                                    moves.push({ fromRow: row, fromCol: col, toRow: r, toCol: c });
+                                }
+                                if (board[r][c]) break;
+                                r += dr;
+                                c += dc;
+                            }
+                        });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        // Computer makes a random move
+        function computerMove() {
+            if (gameOver || currentPlayer === playerColor) return;
+            const computerPlayer = playerColor === 'white' ? 'black' : 'white';
+            const moves = getPossibleMoves(computerPlayer);
+            if (moves.length === 0) {
+                currentPlayer = playerColor;
+                updateStatus();
+                return;
+            }
+            const move = moves[Math.floor(Math.random() * moves.length)];
+            movePiece(move.fromRow, move.fromCol, move.toRow, move.toCol);
+            if (move.fromRow === 4 && move.fromCol === 4 && board[move.toRow][move.toCol] === 'king') {
+                kingOnThrone = false;
+            }
+            checkCaptures(move.toRow, move.toCol);
+            checkWinConditions();
+            currentPlayer = playerColor;
+            updateStatus();
+            renderBoard();
+        }
+
+        // Update status
+        function updateStatus() {
+            if (!gameOver) {
+                document.getElementById('status').textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn (${currentPlayer === 'white' ? 'Defenders' : 'Attackers'})`;
+            }
+        }
+
+        // Game mode and player selection
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                gameMode = e.target.value;
+                document.getElementById('player-selection').style.display = gameMode === 'vs-computer' ? 'block' : 'none';
+                setupBoard();
+                currentPlayer = 'white';
+                playerColor = document.getElementById('player-color').value;
+                selectedPiece = null;
+                gameOver = false;
+                updateStatus();
+                renderBoard();
+                if (gameMode === 'vs-computer' && playerColor !== 'white') {
+                    setTimeout(computerMove, 500);
+                }
+            });
+        });
+
+        document.getElementById('player-color').addEventListener('change', (e) => {
+            playerColor = e.target.value;
+            setupBoard();
+            currentPlayer = 'white';
+            selectedPiece = null;
+            gameOver = false;
+            updateStatus();
+            renderBoard();
+            if (gameMode === 'vs-computer' && playerColor !== 'white') {
+                setTimeout(computerMove, 500);
+            }
+        });
+
+        // Reset game
+        document.getElementById('reset').addEventListener('click', () => {
+            setupBoard();
+            currentPlayer = 'white';
+            playerColor = document.getElementById('player-color').value;
+            selectedPiece = null;
+            gameOver = false;
+            updateStatus();
+            renderBoard();
+            if (gameMode === 'vs-computer' && playerColor !== 'white') {
+                setTimeout(computerMove, 500);
+            }
+        });
+
+        // Initialize game
+        setupBoard();
+        renderBoard();
+    </script>
+</body>
+</html>
