@@ -5,89 +5,250 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablut Game</title>
     <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --throne-color: #ffd700;
+            --corner-color: #8d8d8d;
+            --black-piece: #2c3e50;
+            --white-piece: #ecf0f1;
+            --king-piece: #e74c3c;
+            --selected-border: #4fc3f7;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            padding: 20px;
+            line-height: 1.6;
         }
+
+        h1 {
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
         #game-board {
             display: grid;
-            grid-template-columns: repeat(9, 50px);
+            grid-template-columns: repeat(9, 1fr);
             grid-gap: 2px;
-            background-color: #333;
+            background-color: var(--dark-color);
             padding: 5px;
+            border-radius: 5px;
+            margin: 0 auto;
+            width: 100%;
+            aspect-ratio: 1/1;
         }
+
         .square {
-            width: 50px;
-            height: 50px;
-            background-color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
+            background-color: var(--light-color);
             cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
         }
+
+        .square:hover {
+            background-color: #e2e6ea;
+        }
+
         .throne {
-            background-color: #ffd700;
+            background-color: var(--throne-color);
         }
+
         .corner {
-            background-color: #888;
+            background-color: var(--corner-color);
         }
+
         .piece {
-            width: 40px;
-            height: 40px;
+            width: 80%;
+            height: 80%;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
+
         .black {
-            background-color: #000;
+            background-color: var(--black-piece);
         }
+
         .white {
-            background-color: #fff;
-            border: 2px solid #000;
+            background-color: var(--white-piece);
+            border: 2px solid var(--dark-color);
         }
+
         .king {
-            background-color: #ff4500;
-            border: 2px solid #000;
+            background-color: var(--king-piece);
+            border: 2px solid var(--dark-color);
         }
+
         .selected {
-            border: 3px solid #00f;
+            border: 3px solid var(--selected-border);
+            box-sizing: border-box;
         }
+
         #status {
-            margin-top: 20px;
-            font-size: 18px;
+            margin: 20px 0;
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+            width: 100%;
         }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .control-group {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
         #game-mode, #player-selection {
-            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
+
         #player-selection {
             display: none;
         }
-        #reset {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            box-shadow: var(--shadow);
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+        }
+
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            #game-container {
+                padding: 10px;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .control-group {
+                padding: 10px;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+                gap: 8px;
+            }
         }
     </style>
 </head>
 <body>
     <h1>Tablut</h1>
-    <div id="game-mode">
-        <label><input type="radio" name="mode" value="two-player" checked> Two Player</label>
-        <label><input type="radio" name="mode" value="vs-computer"> Vs Computer</label>
+    
+    <div id="game-container">
+        <div id="game-board"></div>
+        <div id="status">White's turn (Defenders)</div>
     </div>
-    <div id="player-selection">
-        <label>Play as: 
-            <select id="player-color">
-                <option value="white">White (Defenders)</option>
-                <option value="black">Black (Attackers)</option>
-            </select>
-        </label>
+    
+    <div class="controls">
+        <div class="control-group" id="game-mode">
+            <h3>Game Mode</h3>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="mode" value="two-player" checked> 
+                    Two Player
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="mode" value="vs-computer"> 
+                    Vs Computer
+                </label>
+            </div>
+        </div>
+        
+        <div class="control-group" id="player-selection">
+            <h3>Player Selection</h3>
+            <label>
+                Play as: 
+                <select id="player-color">
+                    <option value="white">White (Defenders)</option>
+                    <option value="black">Black (Attackers)</option>
+                </select>
+            </label>
+        </div>
+        
+        <button id="reset">Reset Game</button>
     </div>
-    <div id="game-board"></div>
-    <div id="status">White's turn (Defenders)</div>
-    <button id="reset">Reset Game</button>
 
     <script>
         const boardSize = 9;
