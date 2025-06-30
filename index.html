@@ -115,9 +115,20 @@
         }
 
         .selected {
-            border: 3px solid var(--selected-border);
-            box-sizing: border-box;
-        }
+        border: 3px solid var(--selected-border);
+        box-sizing: border-box;
+        /* Add these lines to prevent size changes */
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Add this new rule to ensure the piece doesn't affect the square size */
+    .square .piece.selected {
+        position: absolute;
+        width: calc(80% - 6px); /* Account for border width */
+        height: calc(80% - 6px); /* Account for border width */
+    }
+
 
         #status {
             margin: 20px 0;
@@ -397,34 +408,33 @@
             kingOnThrone = true;
         }
 
-        // Render board
         function renderBoard() {
-            const gameBoard = document.getElementById('game-board');
-            gameBoard.innerHTML = '';
-            for (let row = 0; row < boardSize; row++) {
-                for (let col = 0; col < boardSize; col++) {
-                    const square = document.createElement('div');
-                    square.classList.add('square');
-                    if (row === 4 && col === 4) {
-                        square.classList.add('throne');
-                    }
-                    if ((row === 0 && col === 0) || (row === 0 && col === 8) ||
-                        (row === 8 && col === 0) || (row === 8 && col === 8)) {
-                        square.classList.add('corner');
-                    }
-                    if (board[row][col]) {
-                        const piece = document.createElement('div');
-                        piece.classList.add('piece', board[row][col]);
-                        if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
-                            piece.classList.add('selected');
-                        }
-                        square.appendChild(piece);
-                    }
-                    square.addEventListener('click', () => handleSquareClick(row, col));
-                    gameBoard.appendChild(square);
-                }
+    const gameBoard = document.getElementById('game-board');
+    gameBoard.innerHTML = '';
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            const square = document.createElement('div');
+            square.classList.add('square');
+            if (row === 4 && col === 4) {
+                square.classList.add('throne');
             }
+            if ((row === 0 && col === 0) || (row === 0 && col === 8) ||
+                (row === 8 && col === 0) || (row === 8 && col === 8)) {
+                square.classList.add('corner');
+            }
+            if (board[row][col]) {
+                const piece = document.createElement('div');
+                piece.classList.add('piece', board[row][col]);
+                if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
+                    piece.classList.add('selected');
+                }
+                square.appendChild(piece);
+            }
+            square.addEventListener('click', () => handleSquareClick(row, col));
+            gameBoard.appendChild(square);
         }
+    }
+}
 
         // Handle square clicks
         function handleSquareClick(row, col) {
