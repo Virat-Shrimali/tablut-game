@@ -409,32 +409,32 @@
         }
 
         function renderBoard() {
-    const gameBoard = document.getElementById('game-board');
-    gameBoard.innerHTML = '';
-    for (let row = 0; row < boardSize; row++) {
-        for (let col = 0; col < boardSize; col++) {
-            const square = document.createElement('div');
-            square.classList.add('square');
-            if (row === 4 && col === 4) {
-                square.classList.add('throne');
-            }
-            if ((row === 0 && col === 0) || (row === 0 && col === 8) ||
-                (row === 8 && col === 0) || (row === 8 && col === 8)) {
-                square.classList.add('corner');
-            }
-            if (board[row][col]) {
-                const piece = document.createElement('div');
-                piece.classList.add('piece', board[row][col]);
-                if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
-                    piece.classList.add('selected');
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = '';
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    if (row === 4 && col === 4) {
+                        square.classList.add('throne');
+                    }
+                    if ((row === 0 && col === 0) || (row === 0 && col === 8) ||
+                        (row === 8 && col === 0) || (row === 8 && col === 8)) {
+                        square.classList.add('corner');
+                    }
+                    if (board[row][col]) {
+                        const piece = document.createElement('div');
+                        piece.classList.add('piece', board[row][col]);
+                        if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
+                            piece.classList.add('selected');
+                        }
+                        square.appendChild(piece);
+                    }
+                    square.addEventListener('click', () => handleSquareClick(row, col));
+                    gameBoard.appendChild(square);
                 }
-                square.appendChild(piece);
             }
-            square.addEventListener('click', () => handleSquareClick(row, col));
-            gameBoard.appendChild(square);
         }
-    }
-}
 
         // Handle square clicks
         function handleSquareClick(row, col) {
@@ -461,7 +461,7 @@
                         updateStatus();
                         renderBoard();
                         if (gameMode === 'vs-computer' && currentPlayer !== playerColor) {
-                            setTimeout(computerMove, 500);
+                            setTimeout(computerMove, 100); // Reduced delay for faster response
                         }
                     }
                 } else if (board[row][col] &&
@@ -509,77 +509,76 @@
         }
 
         // Check for captures
-        // Check for captures
-function checkCaptures(row, col) {
-    const piece = board[row][col];
-    const opponent = piece === 'black' ? ['white', 'king'] : ['black'];
-    const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+        function checkCaptures(row, col) {
+            const piece = board[row][col];
+            const opponent = piece === 'black' ? ['white', 'king'] : ['black'];
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
-    // First check if we captured the king on the throne
-    if (board[4][4] === 'king' && isKingCaptured(4, 4)) {
-        declareWinner('Black wins! King captured on throne!');
-        return;
-    }
-
-    directions.forEach(([dr, dc]) => {
-        const r = row + dr;
-        const c = col + dc;
-        if (r >= 0 && r < boardSize && c >= 0 && c < boardSize && opponent.includes(board[r][c])) {
-            const r2 = r + dr;
-            const c2 = c + dc;
-            const isHostile = (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) ? false :
-                (board[r2][c2] === piece) ||
-                (r2 === 4 && c2 === 4) ||
-                ((r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
-                    (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
-            if (isHostile) {
-                if (board[r][c] !== 'king') {
-                    board[r][c] = null;
-                }
+            // First check if we captured the king on the throne
+            if (board[4][4] === 'king' && isKingCaptured(4, 4)) {
+                declareWinner('Black wins! King captured on throne!');
+                return;
             }
+
+            directions.forEach(([dr, dc]) => {
+                const r = row + dr;
+                const c = col + dc;
+                if (r >= 0 && r < boardSize && c >= 0 && c < boardSize && opponent.includes(board[r][c])) {
+                    const r2 = r + dr;
+                    const c2 = c + dc;
+                    const isHostile = (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) ? false :
+                        (board[r2][c2] === piece) ||
+                        (r2 === 4 && c2 === 4) ||
+                        ((r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
+                            (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
+                    if (isHostile) {
+                        if (board[r][c] !== 'king') {
+                            board[r][c] = null;
+                        }
+                    }
+                }
+            });
         }
-    });
-}
 
-// Check if king is captured
-function isKingCaptured(row, col) {
-    if (board[row][col] !== 'king') return false;
+        // Check if king is captured
+        function isKingCaptured(row, col) {
+            if (board[row][col] !== 'king') return false;
 
-    // King on throne requires all 4 sides blocked by Black
-    if (row === 4 && col === 4) {
-        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-        return directions.every(([dr, dc]) => {
-            const r = row + dr;
-            const c = col + dc;
-            // Check if adjacent square is black or edge of board
-            if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return true;
-            return board[r][c] === 'black';
-        });
-    }
+            // King on throne requires all 4 sides blocked by Black
+            if (row === 4 && col === 4) {
+                const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                return directions.every(([dr, dc]) => {
+                    const r = row + dr;
+                    const c = col + dc;
+                    // Check if adjacent square is black or edge of board
+                    if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return true;
+                    return board[r][c] === 'black';
+                });
+            }
 
-    // King not on throne: check if surrounded on two opposite sides
-    const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-    return directions.some(([dr, dc]) => {
-        const r1 = row + dr;
-        const c1 = col + dc;
-        const r2 = row - dr;
-        const c2 = col - dc;
+            // King not on throne: check if surrounded on two opposite sides
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            return directions.some(([dr, dc]) => {
+                const r1 = row + dr;
+                const c1 = col + dc;
+                const r2 = row - dr;
+                const c2 = col - dc;
 
-        const isHostile1 = (r1 < 0 || r1 >= boardSize || c1 < 0 || c1 >= boardSize) ? false :
-            (board[r1][c1] === 'black' ||
-                (r1 === 4 && c1 === 4) ||
-                (r1 === 0 && c1 === 0) || (r1 === 0 && c1 === 8) ||
-                (r1 === 8 && c1 === 0) || (r1 === 8 && c1 === 8));
+                const isHostile1 = (r1 < 0 || r1 >= boardSize || c1 < 0 || c1 >= boardSize) ? false :
+                    (board[r1][c1] === 'black' ||
+                        (r1 === 4 && c1 === 4) ||
+                        (r1 === 0 && c1 === 0) || (r1 === 0 && c1 === 8) ||
+                        (r1 === 8 && c1 === 0) || (r1 === 8 && c1 === 8));
 
-        const isHostile2 = (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) ? false :
-            (board[r2][c2] === 'black' ||
-                (r2 === 4 && c2 === 4) ||
-                (r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
-                (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
+                const isHostile2 = (r2 < 0 || r2 >= boardSize || c2 < 0 || c2 >= boardSize) ? false :
+                    (board[r2][c2] === 'black' ||
+                        (r2 === 4 && c2 === 4) ||
+                        (r2 === 0 && c2 === 0) || (r2 === 0 && c2 === 8) ||
+                        (r2 === 8 && c2 === 0) || (r2 === 8 && c2 === 8));
 
-        return isHostile1 && isHostile2;
-    });
-}
+                return isHostile1 && isHostile2;
+            });
+        }
 
         // Check win conditions
         function checkWinConditions() {
@@ -613,21 +612,16 @@ function isKingCaptured(row, col) {
 
         // Show win modal and disable board
         function declareWinner(message) {
-            console.log("Declaring winner:", message);
             gameOver = true;
             document.getElementById('status').textContent = message;
             document.getElementById('game-board').classList.add('game-over');
 
             const modal = document.getElementById('win-modal');
-            console.log("Modal element:", modal);
-            console.log("Before display:", modal.style.display);
-
             document.getElementById('win-message').textContent = message;
             document.getElementById('win-title').textContent =
                 message.includes('Draw') ? 'Game Over!' : 'Victory!';
 
             modal.style.display = 'flex';
-            console.log("After display:", modal.style.display);
         }
 
         // Get all possible moves for a player
@@ -657,14 +651,15 @@ function isKingCaptured(row, col) {
             return moves;
         }
 
-        // Computer makes a move
+        // Computer makes a move with optimized intelligence
         function computerMove() {
             if (gameOver || currentPlayer === playerColor) return;
 
             document.getElementById('status').textContent = "Computer is thinking...";
             renderBoard();
 
-            setTimeout(() => {
+            // Use requestAnimationFrame for smoother UI
+            requestAnimationFrame(() => {
                 const computerPlayer = playerColor === 'white' ? 'black' : 'white';
                 const moves = getPossibleMoves(computerPlayer);
 
@@ -674,14 +669,37 @@ function isKingCaptured(row, col) {
                     return;
                 }
 
-                const move = moves[Math.floor(Math.random() * moves.length)];
-                movePiece(move.fromRow, move.fromCol, move.toRow, move.toCol);
+                // Find king position once (optimization)
+                const kingPos = findKing();
+                const isBlack = computerPlayer === 'black';
+                
+                // Score moves and find best simultaneously (optimization)
+                let bestScore = -Infinity;
+                let bestMoves = [];
+                
+                for (const move of moves) {
+                    const score = fastEvaluateMove(move, computerPlayer, kingPos, isBlack);
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoves = [move];
+                    } else if (score === bestScore) {
+                        bestMoves.push(move);
+                    }
+                }
 
-                if (move.fromRow === 4 && move.fromCol === 4 && board[move.toRow][move.toCol] === 'king') {
+                // Randomly select from best moves
+                const selectedMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+                
+                // Execute the move
+                movePiece(selectedMove.fromRow, selectedMove.fromCol, selectedMove.toRow, selectedMove.toCol);
+
+                if (selectedMove.fromRow === 4 && selectedMove.fromCol === 4 && 
+                    board[selectedMove.toRow][selectedMove.toCol] === 'king') {
                     kingOnThrone = false;
                 }
 
-                checkCaptures(move.toRow, move.toCol);
+                checkCaptures(selectedMove.toRow, selectedMove.toCol);
                 checkWinConditions();
 
                 if (!gameOver) {
@@ -689,7 +707,180 @@ function isKingCaptured(row, col) {
                     updateStatus();
                     renderBoard();
                 }
-            }, 500);
+            });
+        }
+
+        // Optimized move evaluation
+        function fastEvaluateMove(move, player, kingPos, isBlack) {
+            let score = 0;
+            const piece = board[move.fromRow][move.fromCol];
+            const isKing = piece === 'king';
+            
+            // 1. Check for immediate captures (optimized)
+            score += countPotentialCaptures(move.toRow, move.toCol, player) * (isBlack ? 30 : 40);
+            
+            // 2. King capture check (optimized)
+            if (isBlack && kingPos && wouldCaptureKing(move, kingPos)) {
+                return 1000; // Instant win
+            }
+            
+            // 3. King escape potential (optimized)
+            if (isKing) {
+                const dist = Math.min(
+                    move.toRow, 
+                    boardSize - 1 - move.toRow, 
+                    move.toCol, 
+                    boardSize - 1 - move.toCol
+                );
+                score += (boardSize - dist) * 5;
+                if (dist === 0) return 1000;
+            }
+            
+            // 4. Distance to king (optimized)
+            if (kingPos) {
+                if (isBlack) {
+                    // Black wants to get closer to king
+                    const newDist = Math.max(
+                        Math.abs(move.toRow - kingPos.row),
+                        Math.abs(move.toCol - kingPos.col)
+                    );
+                    const oldDist = Math.max(
+                        Math.abs(move.fromRow - kingPos.row),
+                        Math.abs(move.fromCol - kingPos.col)
+                    );
+                    score += (oldDist - newDist) * 3; // Reward getting closer
+                } else if (!isKing) {
+                    // White wants to protect king
+                    const dist = Math.max(
+                        Math.abs(move.toRow - kingPos.row),
+                        Math.abs(move.toCol - kingPos.col)
+                    );
+                    score += (boardSize - dist) * 4;
+                }
+            }
+            
+            // 5. Vulnerability check (optimized)
+            score -= evaluateVulnerability(move.toRow, move.toCol, player) * 20;
+            
+            // 6. Special positions (optimized)
+            if (move.toRow === 4 && move.toCol === 4) {
+                score += isKing ? 15 : (isBlack ? 25 : 0);
+            }
+            
+            // 7. Center control for black (optimized)
+            if (isBlack) {
+                const newCenterDist = Math.max(
+                    Math.abs(move.toRow - 4),
+                    Math.abs(move.toCol - 4)
+                );
+                const oldCenterDist = Math.max(
+                    Math.abs(move.fromRow - 4),
+                    Math.abs(move.fromCol - 4)
+                );
+                score += (oldCenterDist - newCenterDist) * 2;
+            }
+            
+            return score;
+        }
+        
+        // Optimized king capture check
+        function wouldCaptureKing(move, kingPos) {
+            if (board[move.toRow][move.toCol] !== 'black') return false;
+            
+            // Temporarily move the piece
+            const original = board[kingPos.row][kingPos.col];
+            board[move.fromRow][move.fromCol] = null;
+            board[move.toRow][move.toCol] = 'black';
+            
+            const isCaptured = isKingCaptured(kingPos.row, kingPos.col);
+            
+            // Restore original position
+            board[move.fromRow][move.fromCol] = 'black';
+            board[move.toRow][move.toCol] = null;
+            board[kingPos.row][kingPos.col] = original;
+            
+            return isCaptured;
+        }
+        
+        // Optimized capture counting
+        function countPotentialCaptures(row, col, player) {
+            let captureCount = 0;
+            const piece = board[row][col];
+            const opponent = player === 'black' ? ['white', 'king'] : ['black'];
+            
+            // Check right
+            if (col < boardSize-2 && opponent.includes(board[row][col+1])) {
+                if (board[row][col+2] === piece || isHostilePosition(row, col+2)) captureCount++;
+            }
+            // Check left
+            if (col > 1 && opponent.includes(board[row][col-1])) {
+                if (board[row][col-2] === piece || isHostilePosition(row, col-2)) captureCount++;
+            }
+            // Check down
+            if (row < boardSize-2 && opponent.includes(board[row+1][col])) {
+                if (board[row+2][col] === piece || isHostilePosition(row+2, col)) captureCount++;
+            }
+            // Check up
+            if (row > 1 && opponent.includes(board[row-1][col])) {
+                if (board[row-2][col] === piece || isHostilePosition(row-2, col)) captureCount++;
+            }
+            
+            return captureCount;
+        }
+        
+        function isHostilePosition(row, col) {
+            return (row < 0 || row >= boardSize || col < 0 || col >= boardSize) ? false :
+                (row === 4 && col === 4) ||
+                ((row === 0 && col === 0) || (row === 0 && col === 8) ||
+                 (row === 8 && col === 0) || (row === 8 && col === 8));
+        }
+        
+        function findKing() {
+            // Optimized king search - we know king starts at center
+            if (board[4][4] === 'king') return { row: 4, col: 4 };
+            
+            // If not on throne, do full search (uncommon case)
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    if (board[row][col] === 'king') {
+                        return { row, col };
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Optimized vulnerability check
+        function evaluateVulnerability(row, col, player) {
+            let vulnerability = 0;
+            const opponent = player === 'black' ? ['white', 'king'] : ['black'];
+            
+            // Check right
+            if (col > 0 && opponent.includes(board[row][col-1])) {
+                if (col < boardSize-1 && (board[row][col+1] === board[row][col-1] || isHostilePosition(row, col+1))) {
+                    vulnerability++;
+                }
+            }
+            // Check left
+            if (col < boardSize-1 && opponent.includes(board[row][col+1])) {
+                if (col > 0 && (board[row][col-1] === board[row][col+1] || isHostilePosition(row, col-1))) {
+                    vulnerability++;
+                }
+            }
+            // Check down
+            if (row > 0 && opponent.includes(board[row-1][col])) {
+                if (row < boardSize-1 && (board[row+1][col] === board[row-1][col] || isHostilePosition(row+1, col))) {
+                    vulnerability++;
+                }
+            }
+            // Check up
+            if (row < boardSize-1 && opponent.includes(board[row+1][col])) {
+                if (row > 0 && (board[row-1][col] === board[row+1][col] || isHostilePosition(row-1, col))) {
+                    vulnerability++;
+                }
+            }
+            
+            return vulnerability;
         }
 
         // Update status
@@ -720,7 +911,7 @@ function isKingCaptured(row, col) {
                     gameMode === 'vs-computer' ? 'block' : 'none';
                 resetGame();
                 if (gameMode === 'vs-computer' && playerColor !== 'white') {
-                    setTimeout(computerMove, 500);
+                    setTimeout(computerMove, 100);
                 }
             });
         });
@@ -729,7 +920,7 @@ function isKingCaptured(row, col) {
             playerColor = e.target.value;
             resetGame();
             if (gameMode === 'vs-computer' && playerColor !== 'white') {
-                setTimeout(computerMove, 500);
+                setTimeout(computerMove, 100);
             }
         });
 
